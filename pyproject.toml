@@ -1,5 +1,5 @@
 [project]
-name = "mac-backgrounds"
+name = "still-to-life-background"
 version = "0.1.0"
 description = "Turn images into moving macOS wallpapers using AI depth parallax"
 requires-python = ">=3.12,<3.14"

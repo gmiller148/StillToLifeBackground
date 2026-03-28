@@ -1,4 +1,4 @@
-# MacBackgrounds
+# StillToLifeBackground
 
 Turn static images into moving macOS wallpapers using AI depth estimation and parallax animation. Everything runs locally on your Mac for free.
 
@@ -21,7 +21,7 @@ brew install python@3.13 uv ffmpeg
 ## Quick start
 
 ```bash
-git clone <this-repo> && cd MacBackgrounds
+git clone <this-repo> && cd StillToLifeBackground
 brew install python@3.13 uv ffmpeg    # skip if already installed
 mkdir -p source_photos
 ```
