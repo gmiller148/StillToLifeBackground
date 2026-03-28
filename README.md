@@ -73,11 +73,25 @@ Output goes to `output_videos/` as an HEVC .mov file.
 
 ## Setting as macOS wallpaper
 
-After generating your .mov file, use one of these to set it as your wallpaper:
+No third-party app needed. The install script registers your video directly into macOS's native wallpaper system:
 
-- **[VideoPaper](https://github.com/Mcrich-LLC/VideoPaper)** (free, macOS 26+) — `brew tap mcrich-llc/homebrew-formulae && brew install --cask VideoPaper`. Videos appear natively in System Settings > Wallpaper.
-- **[Backdrop](https://cindori.com/backdrop)** ($9.99) — Most polished option. 4K playback, <0.3% CPU, multi-monitor, lock screen support.
-- **[Aerial](https://aerialscreensaver.github.io/)** (free) — Screensaver that plays custom videos alongside Apple's built-in aerials.
+```bash
+./scripts/install_wallpaper.sh output_videos/your_image_wallpaper.mov "Display Name"
+```
+
+Then go to **System Settings > Wallpaper** and look for the **"Custom"** category. Your video appears alongside Apple's built-in aerials.
+
+This works by copying the `.mov` into `~/Library/Application Support/com.apple.wallpaper/aerials/` and registering it in the wallpaper manifest. Requires macOS Sonoma (14) or later.
+
+### Full workflow (two commands)
+
+```bash
+# 1. Generate the parallax video from any image
+./scripts/make_wallpaper.sh source_photos/my_painting.jpg
+
+# 2. Install it as a native macOS wallpaper
+./scripts/install_wallpaper.sh output_videos/my_painting_wallpaper.mov "My Painting"
+```
 
 ## Bonus: Real-ESRGAN upscaler
 
