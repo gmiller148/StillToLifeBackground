@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(rm -f /tmp/output_test.png /tmp/realesrgan-macos.zip /tmp/realesrgan-ncnn-macos.zip)",
-      "Bash(rm -rf /tmp/realesrgan-ncnn-macos)"
-    ]
-  }
-}

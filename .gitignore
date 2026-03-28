@@ -2,4 +2,6 @@
 __pycache__/
 *.pyc
 .DS_Store
+.claude/
 output_videos/
+source_photos/

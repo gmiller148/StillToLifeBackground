@@ -18,12 +18,25 @@ All free, all local:
 brew install python@3.13 uv ffmpeg
 ```
 
-## Usage
+## Quick start
 
 ```bash
-# Default settings (dolly zoom, 4K, 22s loop)
-./scripts/make_wallpaper.sh source_photos/your_image.jpg
+git clone <this-repo> && cd MacBackgrounds
+brew install python@3.13 uv ffmpeg    # skip if already installed
+mkdir -p source_photos
+```
 
+Drop any image (photo, painting, poster) into `source_photos/`, then:
+
+```bash
+./scripts/make_wallpaper.sh source_photos/your_image.jpg
+```
+
+That's it. Output lands in `output_videos/`.
+
+### More examples
+
+```bash
 # Customize the animation
 ./scripts/make_wallpaper.sh source_photos/your_image.jpg \
     --style dolly --intensity 1.2 --duration 30
