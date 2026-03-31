@@ -83,6 +83,8 @@ Then go to **System Settings > Wallpaper** and look for the **"Custom"** categor
 
 This works by copying the `.mov` into `~/Library/Application Support/com.apple.wallpaper/aerials/` and registering it in the wallpaper manifest. Requires macOS Sonoma (14) or later.
 
+**Persistence:** macOS overwrites the wallpaper manifest from Apple's CDN every ~10 days, which removes custom entries. The install script automatically sets up a launchd watchdog that detects this and re-injects your wallpapers within seconds. Your videos are never deleted — only the manifest reference needs to be restored.
+
 ### Full workflow (two commands)
 
 ```bash
