@@ -10,4 +10,8 @@ dependencies = [
     "opencv-python>=4.8",
     "numpy>=1.24",
     "packaging>=23.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "python-multipart>=0.0.18",
+    "pillow>=10.0",
 ]

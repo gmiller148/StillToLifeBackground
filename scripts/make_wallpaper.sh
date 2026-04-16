@@ -29,8 +29,12 @@ HEIGHT="2160"
 FPS="30"
 DURATION="22"
 CRF="18"
+QUALITY="60"
+SSAA=""
+SPEED=""
 OUTPUT_NAME=""
 VENV_DIR="${HOME}/.cache/depthflow-env"
+DEPTHFLOW_EXTRA=()
 
 # --- Parse args ---
 INPUT=""
@@ -44,18 +48,26 @@ while [[ $# -gt 0 ]]; do
         --duration)  DURATION="$2"; shift 2 ;;
         --crf)       CRF="$2"; shift 2 ;;
         --output)    OUTPUT_NAME="$2"; shift 2 ;;
+        --quality)   QUALITY="$2"; shift 2 ;;
+        --ssaa)      SSAA="$2"; shift 2 ;;
+        --speed)     SPEED="$2"; shift 2 ;;
+        --)          shift; DEPTHFLOW_EXTRA=("$@"); break ;;
         --help|-h)
             sed -n '2,/^$/p' "$0" | sed 's/^# \?//'
             echo ""
             echo "Options:"
             echo "  --style STR       Animation style: dolly, orbital, horizontal, vertical, circle, zoom (default: dolly)"
-            echo "  --intensity NUM   Parallax intensity 0.0-2.0 (default: 1.2)"
+            echo "  --intensity NUM   Parallax intensity 0.0-4.0 (default: 1.2)"
             echo "  --width NUM       Output width (default: 3840)"
             echo "  --height NUM      Output height (default: 2160)"
             echo "  --fps NUM         Frames per second (default: 30)"
             echo "  --duration NUM    Loop duration in seconds (default: 22)"
             echo "  --crf NUM         Quality 0-51, lower=better (default: 18)"
+            echo "  --quality NUM     Render quality 0-100 (default: 60)"
+            echo "  --ssaa NUM        Super-sampling AA factor 0-4 (default: none)"
+            echo "  --speed NUM       Time speed factor (default: 1)"
             echo "  --output NAME     Output filename without extension (default: derived from input)"
+            echo "  --               Everything after this is passed directly to DepthFlow"
             exit 0
             ;;
         -*) echo "Unknown option: $1" >&2; exit 1 ;;
@@ -81,6 +93,16 @@ mkdir -p "$OUTPUT_DIR"
 
 if [[ -z "$OUTPUT_NAME" ]]; then
     OUTPUT_NAME="$(basename "${INPUT%.*}")_wallpaper"
+fi
+
+# Determine output paths (support absolute paths for web app)
+if [[ "$OUTPUT_NAME" == /* ]]; then
+    MP4_OUTPUT="${OUTPUT_NAME}.mp4"
+    MOV_OUTPUT="${OUTPUT_NAME}.mov"
+    mkdir -p "$(dirname "$OUTPUT_NAME")"
+else
+    MP4_OUTPUT="$OUTPUT_DIR/${OUTPUT_NAME}.mp4"
+    MOV_OUTPUT="$OUTPUT_DIR/${OUTPUT_NAME}.mov"
 fi
 
 # --- Check dependencies ---
@@ -112,18 +134,18 @@ echo "  Style:     $STYLE (intensity $INTENSITY)"
 echo "  Output:    ${WIDTH}x${HEIGHT} @ ${FPS}fps, ${DURATION}s"
 
 DEPTHFLOW="$VENV_DIR/bin/depthflow"
-MP4_OUTPUT="$OUTPUT_DIR/${OUTPUT_NAME}.mp4"
+
+# Build main command args
+MAIN_ARGS=(-w "$WIDTH" -h "$HEIGHT" -f "$FPS" -t "$DURATION" --quality "$QUALITY" -o "$MP4_OUTPUT")
+[[ -n "$SSAA" ]] && MAIN_ARGS+=(--ssaa "$SSAA")
+[[ -n "$SPEED" ]] && MAIN_ARGS+=(--speed "$SPEED")
 
 "$DEPTHFLOW" \
     input -i "$INPUT" \
     "$STYLE" --intensity "$INTENSITY" \
+    "${DEPTHFLOW_EXTRA[@]}" \
     h264 --preset slow --crf "$CRF" \
-    main \
-        -w "$WIDTH" -h "$HEIGHT" \
-        -f "$FPS" \
-        -t "$DURATION" \
-        --quality 60 \
-        -o "$MP4_OUTPUT" 2>&1 | grep -E "(Loading|Estimating|Resized|Finished|Stats|error)" || true
+    main "${MAIN_ARGS[@]}" 2>&1 | grep -E "(Loading|Estimating|Resized|Finished|Stats|error)" || true
 
 if [[ ! -f "$MP4_OUTPUT" ]]; then
     echo "Error: DepthFlow rendering failed." >&2
@@ -132,7 +154,6 @@ fi
 
 # --- Convert to HEVC .mov for macOS ---
 echo "=== Converting to macOS-optimized HEVC .mov ==="
-MOV_OUTPUT="$OUTPUT_DIR/${OUTPUT_NAME}.mov"
 
 ffmpeg -y -i "$MP4_OUTPUT" \
     -c:v hevc_videotoolbox -b:v 15M -tag:v hvc1 -an \

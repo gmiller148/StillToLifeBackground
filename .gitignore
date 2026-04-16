@@ -5,3 +5,4 @@ __pycache__/
 .claude/
 output_videos/
 source_photos/
+data/

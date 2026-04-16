@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StillToLife</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>StillToLife</h1>
+    <p class="subtitle">Turn images into animated macOS wallpapers</p>
+
+    <!-- Upload -->
+    <div class="upload-section">
+      <div class="upload-area">
+        <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.heic,.webp,.tiff,.tif,.bmp">
+        <p class="label"><strong>Choose an image</strong> or drag and drop</p>
+      </div>
+
+      <div class="preview-container">
+        <img id="preview-img" alt="Preview">
+        <p class="filename"></p>
+      </div>
+
+      <!-- Config -->
+      <div class="config-panel">
+
+        <!-- ===== ANIMATION PRESET ===== -->
+        <div class="config-section">
+          <div class="section-header" onclick="toggleSection(this)">
+            <h3>Animation</h3>
+            <span class="toggle-icon open">&#9662;</span>
+          </div>
+          <div class="section-body">
+            <div class="config-grid">
+              <div class="field">
+                <label for="style">Style</label>
+                <select id="style">
+                  <option value="dolly" selected>Dolly (push in/out)</option>
+                  <option value="orbital">Orbital (circular orbit)</option>
+                  <option value="horizontal">Horizontal (side to side)</option>
+                  <option value="vertical">Vertical (up and down)</option>
+                  <option value="circle">Circle</option>
+                  <option value="zoom">Zoom (in/out)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Intensity <span class="range-hint">[0 &ndash; 4]</span></label>
+                <div class="range-row">
+                  <input type="range" id="intensity" min="0" max="4" step="0.05" value="1.2">
+                  <span class="range-value" data-for="intensity">1.2</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="field field-toggle">
+              <label><input type="checkbox" id="preset-reverse"> <span>Reverse Direction</span></label>
+            </div>
+
+            <!-- Dolly-specific -->
+            <div class="preset-params" data-for-styles="dolly">
+              <div class="config-grid">
+                <div class="field">
+                  <label>Focal Depth <span class="range-hint">[-1 &ndash; 2]</span></label>
+                  <div class="range-row">
+                    <input type="range" id="preset-depth" min="-1" max="2" step="0.05" value="0.35">
+                    <span class="range-value" data-for="preset-depth">0.35</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Phase <span class="range-hint">[0 &ndash; 1]</span></label>
+                  <div class="range-row">
+                    <input type="range" id="preset-phase" min="0" max="1" step="0.05" value="0">
+                    <span class="range-value" data-for="preset-phase">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Orbital-specific -->
+            <div class="preset-params" data-for-styles="orbital">
+              <div class="config-grid">
+                <div class="field">
+                  <label>Focal Depth <span class="range-hint">[-1 &ndash; 2]</span></label>
+                  <div class="range-row">
+                    <input type="range" id="orbital-depth" min="-1" max="2" step="0.05" value="0.3">
+                    <span class="range-value" data-for="orbital-depth">0.3</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Zoom <span class="range-hint">[0 &ndash; 2]</span></label>
+                  <div class="range-row">
+                    <input type="range" id="orbital-zoom" min="0" max="2" step="0.02" value="0.98">
+                    <span class="range-value" data-for="orbital-zoom">0.98</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Smooth/Loop (dolly, horizontal, vertical, zoom) -->
+            <div class="preset-params" data-for-styles="dolly horizontal vertical zoom">
+              <div class="field field-toggle">
+                <label><input type="checkbox" id="preset-smooth" checked> <span>Smooth (sine wave)</span></label>
+              </div>
+              <div class="field field-toggle">
+                <label><input type="checkbox" id="preset-loop" checked> <span>Loop</span></label>
+              </div>
+            </div>
+
+            <!-- Horizontal/Vertical-specific -->
+            <div class="preset-params" data-for-styles="horizontal vertical">
+              <div class="config-grid">
+                <div class="field">
+                  <label>Phase <span class="range-hint">[0 &ndash; 1]</span></label>
+                  <div class="range-row">
+                    <input type="range" id="hv-phase" min="0" max="1" step="0.05" value="0">
+                    <span class="range-value" data-for="hv-phase">0</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Steady Depth <span class="range-hint">[-1 &ndash; 2]</span></label>
+                  <div class="range-row">
+                    <input type="range" id="hv-steady" min="-1" max="2" step="0.05" value="0.3">
+                    <span class="range-value" data-for="hv-steady">0.3</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Isometric <span class="range-hint">[0 &ndash; 1]</span></label>
+                  <div class="range-row">
+                    <input type="range" id="hv-isometric" min="0" max="1" step="0.05" value="0.6">
+                    <span class="range-value" data-for="hv-isometric">0.6</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Circle-specific -->
+            <div class="preset-params" data-for-styles="circle">
+              <p class="field-hint">Amplitudes (horizontal, vertical, depth)</p>
+              <div class="config-grid config-grid-3">
+                <div class="field">
+                  <label>Amp X</label>
+                  <input type="number" id="circle-amp-x" value="1.0" step="0.1">
+                </div>
+                <div class="field">
+                  <label>Amp Y</label>
+                  <input type="number" id="circle-amp-y" value="1.0" step="0.1">
+                </div>
+                <div class="field">
+                  <label>Amp Z</label>
+                  <input type="number" id="circle-amp-z" value="0.0" step="0.1">
+                </div>
+              </div>
+              <p class="field-hint">Phases (horizontal, vertical, depth)</p>
+              <div class="config-grid config-grid-3">
+                <div class="field">
+                  <label>Phase X</label>
+                  <input type="number" id="circle-phase-x" value="0" step="0.05">
+                </div>
+                <div class="field">
+                  <label>Phase Y</label>
+                  <input type="number" id="circle-phase-y" value="0" step="0.05">
+                </div>
+                <div class="field">
+                  <label>Phase Z</label>
+                  <input type="number" id="circle-phase-z" value="0" step="0.05">
+                </div>
+              </div>
+              <div class="config-grid">
+                <div class="field">
+                  <label>Steady Depth <span class="range-hint">[-1 &ndash; 2]</span></label>
+                  <div class="range-row">
+                    <input type="range" id="circle-steady" min="-1" max="2" step="0.05" value="0.3">
+                    <span class="range-value" data-for="circle-steady">0.3</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Isometric <span class="range-hint">[0 &ndash; 1]</span></label>
+                  <div class="range-row">
+                    <input type="range" id="circle-isometric" min="0" max="1" step="0.05" value="0.6">
+                    <span class="range-value" data-for="circle-isometric">0.6</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Zoom-specific -->
+            <div class="preset-params" data-for-styles="zoom">
+              <div class="config-grid">
+                <div class="field">
+                  <label>Phase <span class="range-hint">[0 &ndash; 1]</span></label>
+                  <div class="range-row">
+                    <input type="range" id="zoom-phase" min="0" max="1" step="0.05" value="0">
+                    <span class="range-value" data-for="zoom-phase">0</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Isometric <span class="range-hint">[0 &ndash; 1]</span></label>
+                  <div class="range-row">
+                    <input type="range" id="zoom-isometric" min="0" max="1" step="0.05" value="0.8">
+                    <span class="range-value" data-for="zoom-isometric">0.8</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ===== DEPTH & CAMERA STATE ===== -->
+        <div class="config-section collapsed">
+          <div class="section-header" onclick="toggleSection(this)">
+            <h3>Depth &amp; Camera</h3>
+            <span class="toggle-icon">&#9662;</span>
+          </div>
+          <div class="section-body">
+            <p class="section-desc">Base state that the animation oscillates around. Leave at defaults unless you want to shift the neutral position.</p>
+            <div class="config-grid">
+              <div class="field">
+                <label>Depth Amount <span class="range-hint">[0 &ndash; 2]</span></label>
+                <div class="range-row">
+                  <input type="range" id="state-height" min="0" max="2" step="0.01" value="" data-default="">
+                  <span class="range-value" data-for="state-height">--</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Steady Plane <span class="range-hint">[0 &ndash; 1]</span></label>
+                <div class="range-row">
+                  <input type="range" id="state-steady" min="0" max="1" step="0.01" value="" data-default="">
+                  <span class="range-value" data-for="state-steady">--</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Focus Plane <span class="range-hint">[0 &ndash; 1]</span></label>
+                <div class="range-row">
+                  <input type="range" id="state-focus" min="0" max="1" step="0.01" value="" data-default="">
+                  <span class="range-value" data-for="state-focus">--</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Camera Zoom <span class="range-hint">[0 &ndash; 2]</span></label>
+                <div class="range-row">
+                  <input type="range" id="state-zoom" min="0" max="2" step="0.01" value="" data-default="">
+                  <span class="range-value" data-for="state-zoom">--</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Isometric <span class="range-hint">[0 &ndash; 1]</span></label>
+                <div class="range-row">
+                  <input type="range" id="state-isometric" min="0" max="1" step="0.01" value="" data-default="">
+                  <span class="range-value" data-for="state-isometric">--</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Dolly Distance <span class="range-hint">[0 &ndash; 20]</span></label>
+                <div class="range-row">
+                  <input type="range" id="state-dolly" min="0" max="20" step="0.1" value="" data-default="">
+                  <span class="range-value" data-for="state-dolly">--</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Depth Invert <span class="range-hint">[0 &ndash; 1]</span></label>
+                <div class="range-row">
+                  <input type="range" id="state-invert" min="0" max="1" step="0.01" value="" data-default="">
+                  <span class="range-value" data-for="state-invert">--</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Offset X <span class="range-hint">[-4 &ndash; 4]</span></label>
+                <div class="range-row">
+                  <input type="range" id="state-offset-x" min="-4" max="4" step="0.05" value="" data-default="">
+                  <span class="range-value" data-for="state-offset-x">--</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Offset Y <span class="range-hint">[-1 &ndash; 1]</span></label>
+                <div class="range-row">
+                  <input type="range" id="state-offset-y" min="-1" max="1" step="0.01" value="" data-default="">
+                  <span class="range-value" data-for="state-offset-y">--</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Center X <span class="range-hint">[-4 &ndash; 4]</span></label>
+                <div class="range-row">
+                  <input type="range" id="state-center-x" min="-4" max="4" step="0.05" value="" data-default="">
+                  <span class="range-value" data-for="state-center-x">--</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Center Y <span class="range-hint">[-1 &ndash; 1]</span></label>
+                <div class="range-row">
+                  <input type="range" id="state-center-y" min="-1" max="1" step="0.01" value="" data-default="">
+                  <span class="range-value" data-for="state-center-y">--</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Origin X <span class="range-hint">[-4 &ndash; 4]</span></label>
+                <div class="range-row">
+                  <input type="range" id="state-origin-x" min="-4" max="4" step="0.05" value="" data-default="">
+                  <span class="range-value" data-for="state-origin-x">--</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Origin Y <span class="range-hint">[-1 &ndash; 1]</span></label>
+                <div class="range-row">
+                  <input type="range" id="state-origin-y" min="-1" max="1" step="0.01" value="" data-default="">
+                  <span class="range-value" data-for="state-origin-y">--</span>
+                </div>
+              </div>
+            </div>
+            <div class="field field-toggle">
+              <label><input type="checkbox" id="state-mirror" checked> <span>Mirror Edges</span></label>
+            </div>
+            <button class="btn-small" onclick="resetStateDefaults()">Reset to Defaults</button>
+          </div>
+        </div>
+
+        <!-- ===== POST-PROCESSING ===== -->
+        <div class="config-section collapsed">
+          <div class="section-header" onclick="toggleSection(this)">
+            <h3>Post-Processing</h3>
+            <span class="toggle-icon">&#9662;</span>
+          </div>
+          <div class="section-body">
+
+            <!-- Vignette -->
+            <div class="fx-group">
+              <div class="field field-toggle">
+                <label><input type="checkbox" id="vignette-enable"> <span>Vignette</span></label>
+              </div>
+              <div class="fx-params" data-enable="vignette-enable">
+                <div class="config-grid">
+                  <div class="field">
+                    <label>Intensity <span class="range-hint">[0 &ndash; 1]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="vignette-intensity" min="0" max="1" step="0.01" value="0.2">
+                      <span class="range-value" data-for="vignette-intensity">0.2</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Decay <span class="range-hint">[0 &ndash; 100]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="vignette-decay" min="0" max="100" step="1" value="20">
+                      <span class="range-value" data-for="vignette-decay">20</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lens Distortion -->
+            <div class="fx-group">
+              <div class="field field-toggle">
+                <label><input type="checkbox" id="lens-enable"> <span>Lens Distortion</span></label>
+              </div>
+              <div class="fx-params" data-enable="lens-enable">
+                <div class="config-grid">
+                  <div class="field">
+                    <label>Intensity <span class="range-hint">[0 &ndash; 1]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="lens-intensity" min="0" max="1" step="0.01" value="0.1">
+                      <span class="range-value" data-for="lens-intensity">0.1</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Decay <span class="range-hint">[0 &ndash; 1]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="lens-decay" min="0" max="1" step="0.01" value="0.4">
+                      <span class="range-value" data-for="lens-decay">0.4</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Quality <span class="range-hint">[0 &ndash; 50]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="lens-quality" min="0" max="50" step="1" value="30">
+                      <span class="range-value" data-for="lens-quality">30</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Blur / Depth of Field -->
+            <div class="fx-group">
+              <div class="field field-toggle">
+                <label><input type="checkbox" id="blur-enable"> <span>Depth of Field (Blur)</span></label>
+              </div>
+              <div class="fx-params" data-enable="blur-enable">
+                <div class="config-grid">
+                  <div class="field">
+                    <label>Intensity <span class="range-hint">[0 &ndash; 2]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="blur-intensity" min="0" max="2" step="0.01" value="1.0">
+                      <span class="range-value" data-for="blur-intensity">1</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Start Depth <span class="range-hint">[0 &ndash; 1]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="blur-start" min="0" max="1" step="0.01" value="0.6">
+                      <span class="range-value" data-for="blur-start">0.6</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>End Depth <span class="range-hint">[0 &ndash; 1]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="blur-end" min="0" max="1" step="0.01" value="1.0">
+                      <span class="range-value" data-for="blur-end">1</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Exponent <span class="range-hint">[0 &ndash; 8]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="blur-exponent" min="0" max="8" step="0.1" value="2.0">
+                      <span class="range-value" data-for="blur-exponent">2</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Quality <span class="range-hint">[1 &ndash; 16]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="blur-quality" min="1" max="16" step="1" value="4">
+                      <span class="range-value" data-for="blur-quality">4</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Directions <span class="range-hint">[1 &ndash; 32]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="blur-directions" min="1" max="32" step="1" value="16">
+                      <span class="range-value" data-for="blur-directions">16</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Inpaint -->
+            <div class="fx-group">
+              <div class="field field-toggle">
+                <label><input type="checkbox" id="inpaint-enable"> <span>Inpaint (steep regions)</span></label>
+              </div>
+              <div class="fx-params" data-enable="inpaint-enable">
+                <div class="config-grid">
+                  <div class="field">
+                    <label>Limit <span class="range-hint">[0 &ndash; 20]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="inpaint-limit" min="0" max="20" step="0.1" value="1.0">
+                      <span class="range-value" data-for="inpaint-limit">1</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="field field-toggle">
+                  <label><input type="checkbox" id="inpaint-black"> <span>Black (replace non-steep instead)</span></label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Colors -->
+            <div class="fx-group">
+              <div class="field field-toggle">
+                <label><input type="checkbox" id="colors-enable"> <span>Color Grading</span></label>
+              </div>
+              <div class="fx-params" data-enable="colors-enable">
+                <div class="config-grid">
+                  <div class="field">
+                    <label>Saturation <span class="range-hint">[0 &ndash; 200]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="colors-saturation" min="0" max="200" step="1" value="100">
+                      <span class="range-value" data-for="colors-saturation">100</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Contrast <span class="range-hint">[0 &ndash; 200]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="colors-contrast" min="0" max="200" step="1" value="100">
+                      <span class="range-value" data-for="colors-contrast">100</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Brightness <span class="range-hint">[0 &ndash; 200]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="colors-brightness" min="0" max="200" step="1" value="100">
+                      <span class="range-value" data-for="colors-brightness">100</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Gamma <span class="range-hint">[0 &ndash; 400]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="colors-gamma" min="0" max="400" step="1" value="100">
+                      <span class="range-value" data-for="colors-gamma">100</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Grayscale <span class="range-hint">[0 &ndash; 100]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="colors-grayscale" min="0" max="100" step="1" value="0">
+                      <span class="range-value" data-for="colors-grayscale">0</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Sepia <span class="range-hint">[0 &ndash; 100]</span></label>
+                    <div class="range-row">
+                      <input type="range" id="colors-sepia" min="0" max="100" step="1" value="0">
+                      <span class="range-value" data-for="colors-sepia">0</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ===== OSCILLATORS ===== -->
+        <div class="config-section collapsed">
+          <div class="section-header" onclick="toggleSection(this)">
+            <h3>Oscillators</h3>
+            <span class="toggle-icon">&#9662;</span>
+          </div>
+          <div class="section-body">
+            <p class="section-desc">Layer custom wave animations on any parameter. These stack with (and can override) the preset animation.</p>
+            <div id="osc-list"></div>
+            <button class="btn-small" onclick="addOscillator()">+ Add Oscillator</button>
+          </div>
+        </div>
+
+        <!-- ===== OUTPUT ===== -->
+        <div class="config-section collapsed">
+          <div class="section-header" onclick="toggleSection(this)">
+            <h3>Output</h3>
+            <span class="toggle-icon">&#9662;</span>
+          </div>
+          <div class="section-body">
+            <div class="config-grid">
+              <div class="field">
+                <label for="resolution">Resolution</label>
+                <select id="resolution">
+                  <option value="3840x2160" selected>4K (3840x2160)</option>
+                  <option value="2560x1440">1440p (2560x1440)</option>
+                  <option value="1920x1080">1080p (1920x1080)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="fps">FPS</label>
+                <select id="fps">
+                  <option value="30" selected>30</option>
+                  <option value="60">60</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="duration">Duration (seconds)</label>
+                <input type="number" id="duration" value="22" min="1" max="600">
+              </div>
+              <div class="field">
+                <label>CRF (Quality) <span class="range-hint">[0 &ndash; 51]</span></label>
+                <div class="range-row">
+                  <input type="range" id="crf" min="0" max="51" step="1" value="18">
+                  <span class="range-value" data-for="crf">18</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Render Quality <span class="range-hint">[0 &ndash; 100]</span></label>
+                <div class="range-row">
+                  <input type="range" id="render-quality" min="0" max="100" step="1" value="60">
+                  <span class="range-value" data-for="render-quality">60</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>SSAA <span class="range-hint">[0 &ndash; 4]</span></label>
+                <div class="range-row">
+                  <input type="range" id="ssaa" min="0" max="4" step="0.25" value="" data-default="">
+                  <span class="range-value" data-for="ssaa">--</span>
+                </div>
+              </div>
+              <div class="field">
+                <label>Speed <span class="range-hint">[0.1 &ndash; 5]</span></label>
+                <div class="range-row">
+                  <input type="range" id="speed" min="0.1" max="5" step="0.1" value="" data-default="">
+                  <span class="range-value" data-for="speed">--</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="generate-btn" disabled>Generate Wallpaper</button>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-section">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill"></div>
+      </div>
+      <p class="progress-message">Starting...</p>
+    </div>
+
+    <!-- Gallery -->
+    <div class="gallery-section">
+      <h2>Your Wallpapers</h2>
+      <p class="gallery-empty">No wallpapers yet. Upload an image to get started.</p>
+      <div class="gallery-grid"></div>
+    </div>
+  </div>
+
+  <div class="toast"></div>
+
+  <!-- Video Preview Modal -->
+  <div id="preview-modal" class="modal-overlay" onclick="if(event.target===this)closePreview()">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closePreview()">&times;</button>
+      <video id="preview-video" controls loop playsinline></video>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

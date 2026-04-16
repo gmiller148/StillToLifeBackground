@@ -192,7 +192,10 @@ if [[ ! -f "$LAUNCH_AGENT" ]]; then
     <key>WatchPaths</key>
     <array>
         <string>${AERIALS_DIR}/manifest/entries.json</string>
+        <string>${AERIALS_DIR}/manifest</string>
     </array>
+    <key>StartInterval</key>
+    <integer>600</integer>
     <key>RunAtLoad</key>
     <true/>
     <key>ThrottleInterval</key>

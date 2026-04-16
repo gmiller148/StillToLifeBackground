@@ -5,12 +5,12 @@ macOS periodically fetches a new manifest.tar from Apple's CDN and
 overwrites ~/Library/Application Support/com.apple.wallpaper/aerials/manifest/entries.json,
 wiping any custom entries. This script merges them back in.
 
-Designed to be triggered by a launchd WatchPaths agent.
+Designed to be triggered by a launchd agent via WatchPaths (immediate)
+and StartInterval (periodic fallback every 10 minutes).
 """
 import json
 import os
 import subprocess
-import sys
 import time
 
 CONFIG_DIR = os.path.expanduser("~/.config/custom-wallpapers")
@@ -25,7 +25,7 @@ LOCKFILE = os.path.join(CONFIG_DIR, ".watchdog.lock")
 def log(msg):
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
     line = f"[{timestamp}] {msg}"
-    print(line)
+    print(line, flush=True)
     try:
         with open(LOG_FILE, "a") as f:
             f.write(line + "\n")
@@ -33,20 +33,30 @@ def log(msg):
         pass
 
 
-def main():
-    # Debounce: skip if we wrote the manifest less than 10 seconds ago
-    if os.path.exists(LOCKFILE):
-        lock_age = time.time() - os.path.getmtime(LOCKFILE)
-        if lock_age < 10:
-            return
+def trim_log():
+    """Keep log file from growing forever — retain last 200 lines."""
+    try:
+        with open(LOG_FILE) as f:
+            lines = f.readlines()
+        if len(lines) > 200:
+            with open(LOG_FILE, "w") as f:
+                f.writelines(lines[-200:])
+    except OSError:
+        pass
 
+
+def inject_entries():
+    """Check manifest and re-inject custom entries if missing.
+
+    Returns True if entries were injected (manifest was modified).
+    """
     if not os.path.exists(CUSTOM_ENTRIES):
         log(f"No custom entries file at {CUSTOM_ENTRIES}, nothing to do")
-        return
+        return False
 
     if not os.path.exists(MANIFEST):
         log(f"Manifest not found at {MANIFEST}")
-        return
+        return False
 
     with open(CUSTOM_ENTRIES) as f:
         custom = json.load(f)
@@ -58,7 +68,7 @@ def main():
     custom_categories = custom.get("categories", [])
 
     if not custom_assets:
-        return
+        return False
 
     # Check if custom entries are already present
     existing_ids = {a["id"] for a in manifest.get("assets", [])}
@@ -68,7 +78,7 @@ def main():
     missing_categories = [c for c in custom_categories if c["id"] not in existing_cat_ids]
 
     if not missing_assets and not missing_categories:
-        return
+        return False
 
     # Verify video files still exist before injecting
     videos_dir = os.path.expanduser(
@@ -83,13 +93,13 @@ def main():
             log(f"Skipping {asset['id']} — video file missing")
 
     if not valid_assets and not missing_categories:
-        return
+        return False
 
     # Merge custom entries back in
     manifest["assets"].extend(valid_assets)
     manifest["categories"].extend(missing_categories)
 
-    # Write lockfile before writing manifest (debounce)
+    # Write lockfile before writing manifest (prevents re-trigger loop)
     with open(LOCKFILE, "w") as f:
         f.write(str(time.time()))
 
@@ -97,11 +107,36 @@ def main():
         json.dump(manifest, f, indent=2)
 
     log(f"Re-injected {len(valid_assets)} assets, {len(missing_categories)} categories")
+    return True
 
-    # Restart WallpaperAgent
+
+def restart_wallpaper_agent():
+    """Restart WallpaperAgent and AerialsExtension so changes take effect."""
     subprocess.run(["killall", "WallpaperAgent"], capture_output=True)
     subprocess.run(["killall", "WallpaperAerialsExtension"], capture_output=True)
     log("Restarted WallpaperAgent")
+
+
+def main():
+    # Debounce: skip if we wrote the manifest less than 10 seconds ago
+    if os.path.exists(LOCKFILE):
+        lock_age = time.time() - os.path.getmtime(LOCKFILE)
+        if lock_age < 10:
+            return
+
+    trim_log()
+
+    modified = inject_entries()
+
+    if modified:
+        restart_wallpaper_agent()
+
+        # Wait and verify — macOS may overwrite again during manifest refresh
+        time.sleep(5)
+        second_pass = inject_entries()
+        if second_pass:
+            log("Manifest was overwritten again during refresh — re-injected (retry)")
+            restart_wallpaper_agent()
 
 
 if __name__ == "__main__":
